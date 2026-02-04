@@ -77,31 +77,43 @@
       <h2 class="text-3xl font-black text-primary">Interactieve winstcalculator</h2>
       <p class="mt-2 text-sm text-gray-600">Zie in enkele klikken hoeveel jouw organisatie kan verdienen.</p>
       <div class="mt-10 grid md:grid-cols-2 gap-6 items-center">
-        <div class="p-6 bg-white rounded-2xl shadow-lg border border-gray-100">
-          <div class="space-y-6">
-            <div>
-              <div class="flex justify-between text-sm font-semibold mb-2">Aantal verkopers <span class="text-primary">50</span></div>
-              <div class="h-2 bg-primary/15 rounded-full">
-                <div class="h-full w-1/2 bg-primary rounded-full relative">
-                  <div class="absolute -right-2 -top-2 w-6 h-6 bg-primary rounded-full border-4 border-white shadow"></div>
-                </div>
-              </div>
+        <div class="p-6 bg-white rounded-2xl shadow-lg border border-gray-100 space-y-6" aria-label="winstcalculator invoer">
+          <!-- Aantal verkopers -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm font-semibold">
+              <label for="sellers" class="cursor-pointer">Aantal verkopers</label>
+              <span id="sellersValue" class="text-primary">50</span>
             </div>
-            <div>
-              <div class="flex justify-between text-sm font-semibold mb-2">Producten per verkoper <span class="text-primary">12</span></div>
-              <div class="h-2 bg-primary/15 rounded-full">
-                <div class="h-full w-1/3 bg-primary rounded-full relative">
-                  <div class="absolute -right-2 -top-2 w-6 h-6 bg-primary rounded-full border-4 border-white shadow"></div>
-                </div>
-              </div>
+            <div class="h-2 rounded-full bg-primary/15 overflow-hidden">
+              <div id="sellersBar" class="h-full bg-primary" style="width:50%"></div>
             </div>
+            <input id="sellers" type="range" min="5" max="500" step="5" value="50" class="w-full accent-primary" />
+          </div>
+          <!-- Producten per verkoper -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm font-semibold">
+              <label for="units" class="cursor-pointer">Producten per verkoper</label>
+              <span id="unitsValue" class="text-primary">12</span>
+            </div>
+            <div class="h-2 rounded-full bg-primary/15 overflow-hidden">
+              <div id="unitsBar" class="h-full bg-primary" style="width:24%"></div>
+            </div>
+            <input id="units" type="range" min="5" max="50" step="1" value="12" class="w-full accent-primary" />
+          </div>
+          <!-- Marge per stuk -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm font-semibold">
+              <label for="margin" class="cursor-pointer">Marge per stuk (€)</label>
+              <span id="marginValue" class="text-primary">4,50</span>
+            </div>
+            <input id="margin" type="number" min="1" max="20" step="0.1" value="4.5" class="w-full border border-primary/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
             <p class="text-xs text-gray-500 bg-primary/5 rounded-lg p-3 text-left">Gebaseerd op onze standaard Belgian Chocolate Mix doos met €4,50 marge per stuk.</p>
           </div>
         </div>
-        <div class="bg-primary text-white rounded-2xl shadow-2xl px-8 py-10 text-center">
+        <div class="bg-primary text-white rounded-2xl shadow-2xl px-8 py-10 text-center" aria-live="polite">
           <p class="uppercase text-xs tracking-[0.3em] font-semibold opacity-90">Jouw totale winst</p>
-          <p class="text-6xl font-black my-4">€2,700</p>
-          <p class="text-xs bg-white/15 px-4 py-2 rounded-full inline-block mb-6">Goed voor 15 nieuwe teamtenues!</p>
+          <p id="totalProfit" class="text-6xl font-black my-4">€2.700</p>
+          <p id="kitsText" class="text-xs bg-white/15 px-4 py-2 rounded-full inline-block mb-6">Goed voor 15 nieuwe teamtenues!</p>
           <button class="w-full h-12 rounded-full bg-white text-primary font-black hover:bg-white/90">Aan de slag</button>
         </div>
       </div>
@@ -232,6 +244,52 @@
     </div>
   </section>
 </main>
+
+<script>
+  (() => {
+    const sellers = document.getElementById("sellers");
+    const units = document.getElementById("units");
+    const margin = document.getElementById("margin");
+    const sellersValue = document.getElementById("sellersValue");
+    const unitsValue = document.getElementById("unitsValue");
+    const marginValue = document.getElementById("marginValue");
+    const sellersBar = document.getElementById("sellersBar");
+    const unitsBar = document.getElementById("unitsBar");
+    const totalProfit = document.getElementById("totalProfit");
+    const kitsText = document.getElementById("kitsText");
+
+    const fmtMoney = (value) =>
+      new Intl.NumberFormat("nl-BE", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+    const fmtDecimal = (value) =>
+      value.toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const update = () => {
+      const s = Number(sellers.value);
+      const u = Number(units.value);
+      const m = Number(margin.value || 0);
+      const total = Math.round(s * u * m);
+      const kits = Math.max(1, Math.round(total / 180)); // ruwe inschatting voor teamtenues
+
+      sellersValue.textContent = s;
+      unitsValue.textContent = u;
+      marginValue.textContent = fmtDecimal(m);
+
+      sellersBar.style.width = `${(s / Number(sellers.max)) * 100}%`;
+      unitsBar.style.width = `${(u / Number(units.max)) * 100}%`;
+
+      totalProfit.textContent = fmtMoney(total);
+      kitsText.textContent = `Goed voor ${kits} nieuwe teamtenues!`;
+    };
+
+    ["input", "change"].forEach((ev) => {
+      sellers.addEventListener(ev, update);
+      units.addEventListener(ev, update);
+      margin.addEventListener(ev, update);
+    });
+
+    update();
+  })();
+</script>
 
 <footer class="border-t border-primary/10 py-6">
   <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-3 text-sm text-gray-600">
